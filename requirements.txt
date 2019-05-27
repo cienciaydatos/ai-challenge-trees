@@ -1,0 +1,7 @@
+numpy
+matplotlib
+opencv-python
+tensorflow
+tensorboard
+keras
+pydot
