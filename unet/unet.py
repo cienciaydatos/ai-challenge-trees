@@ -5,15 +5,6 @@ For a quick overview of UNet check this post
 https://towardsdatascience.com/understanding-semantic-segmentation-with-unet-6be4f42d4b47
 This implementation is based on the code presented there.
 
-TODO:
-
-1. Current implementation is based on original UNet paper and accepts BW images only.
-   Input layer needs to be of shape (572, 572, 3) to accept RGB images.
-   Output image is BW so the transition from RBC to BW needs to happen somewhere inside the network.
-2. Loss function needs to be implemented. Also other metrics might be handy.
-3. Score method for the UNet class needs to be implemented.
-3. Prediction method for the UNet class needs to be implemented.
-
 """
 
 from keras.models import Model
