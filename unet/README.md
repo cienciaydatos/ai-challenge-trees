@@ -19,3 +19,7 @@ The original paper presents the following architecture
 3. Score method for the UNet class needs to be implemented.
 3. Prediction method for the UNet class needs to be implemented.
 
+## Other things to read
+
+- [A guide to convolution arithmetic for deep learning](https://arxiv.org/pdf/1603.07285.pdf)
+- [Fully Convolutional Networks for Semantic Segmentation](https://people.eecs.berkeley.edu/~jonlong/long_shelhamer_fcn.pdf)
