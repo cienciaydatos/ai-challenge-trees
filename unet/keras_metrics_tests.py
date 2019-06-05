@@ -41,10 +41,10 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(K.eval(keras_metrics.wrapping_error(self.true, self.pred)), 1.0)
 
     def test_dice(self):
-        self.assertAlmostEqual(K.eval(keras_metrics.dice(self.true, self.pred)), 1.1547005383792517)
+        self.assertEqual(K.eval(keras_metrics.dice(self.true, self.pred)).tolist(), 2./3.)
 
     def test_iou(self):
-        self.assertEqual(K.eval(keras_metrics.iou(self.true, self.pred)).tolist(), [1.0, 0.0, 1.0])
+        self.assertEqual(K.eval(keras_metrics.iou(self.true, self.pred)).tolist(), 2./3.)
 
 
 if __name__ == '__main__':

@@ -77,10 +77,9 @@ def dice(y_true, y_pred):
     """
     DICE = 2|target and prediction| / |target| + |prediction|
     """
-    intersection = K.sum(K.abs(y_true * y_pred))
-    target = K.sqrt(K.sum(K.square(y_true)))
-    prediction = K.sqrt(K.sum(K.square(y_pred)))
-    return 2.0 * intersection / (target + prediction)
+    intersection = K.sum(y_true * y_pred, axis=-1)
+    union = K.sum(y_true, axis=-1) + K.sum(y_pred, axis=-1)
+    return K.mean((2. * intersection) / (union), axis=0)
 
 
 def iou(y_true, y_pred):
@@ -93,4 +92,4 @@ def iou(y_true, y_pred):
     """
     intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
     union = K.sum(y_true, axis=-1) + K.sum(y_pred, axis=-1) - intersection
-    return intersection / union
+    return K.mean(intersection / union, axis=0)
