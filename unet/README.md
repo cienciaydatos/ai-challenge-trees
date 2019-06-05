@@ -13,13 +13,9 @@ The original paper presents the following architecture
 
 ## Todo
 
-1. Current implementation is based on original UNet paper.
-   Input layer is set to be of shape (572, 572, 3) to accept RGB images.
+1. Current implementation is based on original UNet paper and accepts BW images only.
+   Input layer needs to be of shape (572, 572, 3) to accept RGB images.
+   Output image is BW so the transition from RGB to BW needs to happen somewhere inside the network.
 2. Loss function needs to be implemented. Also other metrics might be handy.
 3. Score method for the UNet class needs to be implemented.
-3. Prediction method for the UNet class needs to be implemented.
-
-## Other things to read
-
-- [A guide to convolution arithmetic for deep learning](https://arxiv.org/pdf/1603.07285.pdf)
-- [Fully Convolutional Networks for Semantic Segmentation](https://people.eecs.berkeley.edu/~jonlong/long_shelhamer_fcn.pdf)
+4. Prediction method for the UNet class needs to be implemented.
