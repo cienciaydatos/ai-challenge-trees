@@ -6,7 +6,7 @@ import cv2
 from scipy.ndimage.filters import median_filter
  
 SAMPLE_SIZE=100
-PROCESS=["gamma","kernel","denoise","dehaze", "unsharp"]
+PROCESS=["gamma","kernel","denoise","dehaze", "unsharp", "clahe"]
 
 def parser():
 	"""Creates a parser for process to be run.
@@ -30,24 +30,30 @@ def parser():
 
 	processes = f"Must be one of the following: {', '.join(PROCESS)}"
 
-	parser.add_argument("-p", "--process", required=False,
-						help=f"Process to be run. {processes}")
+	parser.add_argument("-a", "--all", required=False, default=False, action='store_true',
+						 help ="Compare all")
+	parser.add_argument("-c", "--clip_limit", required=False, type=float, default=2.0,
+						 help ="Clahe clip Limit")
 	parser.add_argument("-i", "--image", required=True,
 						help="Path to input image.")
 	parser.add_argument("-g", "--gamma", required=False, type=float, default=1.0,
 						help="Gamma value to modify on input image.")
 	parser.add_argument("-k", "--kernel", required=False, default='1 1 1;1 20 1;1 1 1',
 						 help="Kernel to be slided over an image")
-	parser.add_argument("-s", "--strength", required=False, type=float, default=10,
-						 help ="Strength of denosing filter")
-	parser.add_argument("-x", "--ustrength", required=False, type=float, default=2,
-						 help ="Unsharp Strength")
+	parser.add_argument("-p", "--process", required=False,
+						help=f"Process to be run. {processes}")
 	parser.add_argument("-q", "--sigma", required=False, type=int, default=8,
 						 help ="Unsharp Sigma")
+	parser.add_argument("-s", "--strength", required=False, type=float, default=10,
+						 help ="Strength of denosing filter")
+	parser.add_argument("-t", "--tile_grid_size", required=False, type=int, default=8,
+						 help ="Clahe Tile Grid Size")
+	parser.add_argument("-x", "--ustrength", required=False, type=float, default=2,
+						 help ="Unsharp Strength")
+	parser.add_argument("-y", "--apply", required=False, type=int, default=1,
+						 help ="Clahe Apply")
 	parser.add_argument("-z", "--zoom_from", required=False, type=int,
 						 help ="Point to zoom from")
-	parser.add_argument("-a", "--all", required=False, default=False, action='store_true',
-						 help ="Compare all")
 						
 	args = vars(parser.parse_args())
 
@@ -315,6 +321,37 @@ def unsharp_channel(chan, sigma, strength):
 	sharp[sharp<0] = 0
 	
 	return sharp
+
+def clahe(image, clip_limit=2.0, tile_grid_size=8, apply=1):
+    """Contrast Limited Adaptive Histogram Equalization
+    Based on https://stackoverflow.com/questions/25008458/how-to-apply-clahe-on-rgb-color-images
+    Parameters
+    ----------
+    img : numpy.ndarray
+        A NumPy's ndarray from cv2.imread as an input.
+    clip_limit: float
+        Clip threshold for CLAHE
+    tile_grid_size: int
+        Size of the grid to perform CLAHE calculation
+    apply: int
+        Set this if you want to reapply clahe to reduce the clip overshoot
+    Returns
+    -------
+    numpy.ndarray
+        A NumPy's ndarray of an image 
+    """
+    clip_limit = clip_limit or 2.0
+    tile_grid_size = tile_grid_size or 8
+    apply = apply or 1
+    he = cv2.createCLAHE(
+        clipLimit=clip_limit, tileGridSize=(tile_grid_size, tile_grid_size)
+    )
+    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+    lab_planes = cv2.split(lab)
+    for _ in range(apply):
+        lab_planes[0] = he.apply(lab_planes[0])  # Lightness component
+    lab = cv2.merge(lab_planes)
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 	
 def compare(title, orig, mod, zoom_from=0):
 	"""Compare portions of an image of size (SAMPLE_SIZE x SAMPLE_SIZE) starting from the zoom_from point.
