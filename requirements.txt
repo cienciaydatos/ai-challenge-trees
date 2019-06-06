@@ -5,3 +5,4 @@ tensorflow
 tensorboard
 keras
 pydot
+tqdm

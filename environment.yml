@@ -17,3 +17,4 @@ dependencies:
   - pydot
   - keras
   - h5py
+  - tqdm
