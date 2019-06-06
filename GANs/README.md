@@ -23,5 +23,5 @@
  GANs are broken at both the computational and algorithmic levels.
 
 
-### Aditional resources
+### Additional resources
 * [Goodfellow NIPS 2016 tutorial](https://youtu.be/HGYYEUSm-0Q)
