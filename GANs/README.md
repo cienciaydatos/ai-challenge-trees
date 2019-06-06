@@ -1,7 +1,7 @@
 # Generative Adversarial Networks
 ## Task # 2
 
-### Reading route1
+### GANs path
 1. DCGANs - Radford et al. (2015)
  Shows how convolutional layers can be used with GANs and provides a
  series of additional architectural guidelines for doing this.
