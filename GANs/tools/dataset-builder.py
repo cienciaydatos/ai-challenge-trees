@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as ET
+from lxml import etree
 import numpy as np
 import cv2
 import re
@@ -70,7 +70,8 @@ def createStack(orig, labels):
     """
     height, width, channels = orig.shape
     bimg = np.zeros((height,width,channels), np.uint8)
-    polyons = labels.findall("./object//polygon")
+    polyons = labels.xpath("./object[re:match(name,'^Trees\s*\d+')]/polygon",
+                           namespaces={"re": "http://exslt.org/regular-expressions"})
     for nodes in polyons:
         bimg = addPolygonShape(bimg, getPoints(list(nodes)))
     return np.hstack([orig,bimg])
@@ -81,7 +82,7 @@ if __name__ == '__main__':
     val_path = "../datasets/val"
     (_, _, filenames) = next(os.walk(labels_path))
     names = [os.path.splitext(f)[0] for f in list(filter(lambda x: x.endswith('xml'), filenames))]
-    imgs = [(n, createStack(cv2.imread(f"{labels_path}/{n}.jpeg"), ET.parse(f"{labels_path}/{n}.xml").getroot())) for n in names]
+    imgs = [(n, createStack(cv2.imread(f"{labels_path}/{n}.jpeg"), etree.parse(f"{labels_path}/{n}.xml").getroot())) for n in names]
     # Save the stacked image for training
     for n,i in imgs[:round(len(imgs)*TRAIN_SIZE)]:
         cv2.imwrite(f"{train_path}/{n}.jpg", i)
