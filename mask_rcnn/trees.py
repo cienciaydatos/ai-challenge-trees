@@ -34,15 +34,17 @@ import datetime
 import xmltodict
 import numpy as np
 import skimage.draw
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
+from pycocotools import mask as maskUtils
 
-# Root directory of the project
-ROOT_DIR = os.path.abspath("../../../")
-
-sys.path.append(ROOT_DIR)  # To find local version of the library
 # Import Mask RCNN
 from mrcnn.config import Config
 from mrcnn import model as modellib, utils
 
+
+# Root directory of the project
+ROOT_DIR = os.path.abspath("../../../")
 # Path to trained weights file
 COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "weights", "mask_rcnn_coco.h5")
 
@@ -67,7 +69,7 @@ class TreeConfig(Config):
     IMAGES_PER_GPU = 2
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 1  # Background + tree
+    NUM_CLASSES = 1 + 1 + 1  # Background + tree + not tree
 
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 100
@@ -88,47 +90,25 @@ class TreeDataset(utils.Dataset):
         subset: Subset to load: train or val
         """
 
-        def parse_polygons(polygon_info):
-            polygon_data = []
-            for info in polygon_info:
-                info_dict = {}
-                info_dict['name'] =  info['name']
-                polygon = dict(info['polygon'])
-                all_x = [int(value) for axis, value in polygon.items() if 'x' in axis]
-                all_y = [int(value) for axis, value in polygon.items() if 'y' in axis]
-                info_dict['all_points_x'] = all_x
-                info_dict['all_points_y'] = all_y
-                polygon_data.append(info_dict)
-            
-            return polygon_data
+        coco = COCO("{}/{}/clean_coco_annotations.json".format(dataset_dir, subset))
+        image_dir = "{}/{}".format(dataset_dir, subset)
 
-        # Add classes. We have only one class to add.
-        self.add_class("tree", 1, "tree")
+        class_ids = sorted(coco.getCatIds())
+        image_ids = list(coco.imgs.keys())
+        
+        # Add classes
+        for i in class_ids:
+            self.add_class("tree", i, coco.loadCats(i)[0]["name"])
 
-        # Train or validation dataset?
-        assert subset in ["train", "val"]
-        dataset_dir = os.path.join(dataset_dir, subset)
-
-        annotation_files = [f for f in os.listdir(dataset_dir) if f.endswith('xml')]
-
-        for file in annotation_files:
-            image = [f for f in os.listdir(dataset_dir) if f.endswith('jpeg') and file.split('.')[0] in f][0]
-            image_path = os.path.join(dataset_dir, image)
-            with open(os.path.join(dataset_dir, file)) as f:
-                xml_str = f.read()
-                dict_ = dict(xmltodict.parse(xml_str)['annotation'])
-                objects = [dict(obj) for obj in dict_['object']]
-                polygons = parse_polygons(objects)
-
-            image = skimage.io.imread(image_path)
-            height, width = image.shape[:2]
-
+        # Add images
+        for i in image_ids:
             self.add_image(
-                "tree",
-                image_id=file.replace('.xml','.jpeg'),  # use file name as a unique image id
-                path=image_path,
-                width=width, height=height,
-                polygons=polygons)
+                "tree", image_id=i,
+                path=os.path.join(image_dir, coco.imgs[i]['file_name']),
+                width=coco.imgs[i]["width"],
+                height=coco.imgs[i]["height"],
+                annotations=coco.loadAnns(coco.getAnnIds(
+                    imgIds=[i], catIds=class_ids, iscrowd=None)))
 
     def load_mask(self, image_id):
         """Generate instance masks for an image.
@@ -137,24 +117,43 @@ class TreeDataset(utils.Dataset):
             one mask per instance.
         class_ids: a 1D array of class IDs of the instance masks.
         """
-        # If not a tree dataset image, delegate to parent class.
+
         image_info = self.image_info[image_id]
-        if image_info["source"] != "tree":
-            return super(self.__class__, self).load_mask(image_id)
-
-        # Convert polygons to a bitmap mask of shape
-        # [height, width, instance_count]
-        info = self.image_info[image_id]
-        mask = np.zeros([info["height"], info["width"], len(info["polygons"])],
-                        dtype=np.uint8)
-        for i, p in enumerate(info["polygons"]):
-            # Get indexes of pixels inside the polygon and set them to 1
-            rr, cc = skimage.draw.polygon(p['all_points_y'], p['all_points_x'])
-            mask[rr, cc, i] = 1
-
-        # Return mask, and array of class IDs of each instance. Since we have
-        # one class ID only, we return an array of 1s
-        return mask.astype(np.bool), np.ones([mask.shape[-1]], dtype=np.int32)
+        
+        instance_masks = []
+        class_ids = []
+        annotations = self.image_info[image_id]["annotations"]
+        # Build mask of shape [height, width, instance_count] and list
+        # of class IDs that correspond to each channel of the mask.
+        for annotation in annotations:
+            class_id = self.map_source_class_id(
+                "tree.{}".format(annotation['category_id']))
+            if class_id:
+                m = self.annToMask(annotation, image_info["height"],
+                                   image_info["width"])
+                # Some objects are so small that they're less than 1 pixel area
+                # and end up rounded out. Skip those objects.
+                if m.max() < 1:
+                    continue
+                # Is it a crowd? If so, use a negative class ID.
+                if annotation['iscrowd']:
+                    # Use negative class ID for crowds
+                    class_id *= -1
+                    # For crowd masks, annToMask() sometimes returns a mask
+                    # smaller than the given dimensions. If so, resize it.
+                    if m.shape[0] != image_info["height"] or m.shape[1] != image_info["width"]:
+                        m = np.ones([image_info["height"], image_info["width"]], dtype=bool)
+                instance_masks.append(m)
+                class_ids.append(class_id)
+        
+        # Pack instance masks into an array
+        if class_ids:
+            mask = np.stack(instance_masks, axis=2).astype(np.bool)
+            class_ids = np.array(class_ids, dtype=np.int32)
+            return mask, class_ids
+        else:
+            # Call super class to return an empty mask
+            return super(TreeDataset, self).load_mask(image_id)
 
     def image_reference(self, image_id):
         """Return the path of the image."""
@@ -163,6 +162,34 @@ class TreeDataset(utils.Dataset):
             return info["path"]
         else:
             super(self.__class__, self).image_reference(image_id)
+
+    def annToRLE(self, ann, height, width):
+        """
+        Convert annotation which can be polygons, uncompressed RLE to RLE.
+        :return: binary mask (numpy 2D array)
+        """
+        segm = ann['segmentation']
+        if isinstance(segm, list):
+            # polygon -- a single object might consist of multiple parts
+            # we merge all parts into one mask rle code
+            rles = maskUtils.frPyObjects(segm, height, width)
+            rle = maskUtils.merge(rles)
+        elif isinstance(segm['counts'], list):
+            # uncompressed RLE
+            rle = maskUtils.frPyObjects(segm, height, width)
+        else:
+            # rle
+            rle = ann['segmentation']
+        return rle
+
+    def annToMask(self, ann, height, width):
+        """
+        Convert annotation which can be polygons, uncompressed RLE, or RLE to binary mask.
+        :return: binary mask (numpy 2D array)
+        """
+        rle = self.annToRLE(ann, height, width)
+        m = maskUtils.decode(rle)
+        return m
 
 
 def train(model):
