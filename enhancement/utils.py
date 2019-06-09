@@ -25,6 +25,8 @@ def parser():
     ``python utils.py -i "../imgs/sample_image.jpg" -p kernel``
     	To test the dehazing run:
     ``python utils.py -i "../imgs/sample_image.jpg" -p dehaze``
+		To apply sequence of filters preprogrammed in function "sequence"
+	``python utils.py -i "../imgs/sample_image.jpg" -e``
 	"""
 	parser = argparse.ArgumentParser()
 
@@ -33,7 +35,7 @@ def parser():
 	parser.add_argument("-a", "--all", required=False, default=False, action='store_true',
 						 help ="Compare all")
 	parser.add_argument("-e", "--sequence", required=False, default=False, action='store_true',
-						 help ="Applies sequence of filters")
+						 help ="Applies a sequence of filters")
 	parser.add_argument("-c", "--clip_limit", required=False, type=float, default=2.0,
 						 help ="Clahe clip Limit")
 	parser.add_argument("-i", "--image", required=True,
@@ -59,8 +61,8 @@ def parser():
 						
 	args = vars(parser.parse_args())
 
-	if not args['all'] and args['process'] is None:
-		parser.error('without -a, -p flag is required')
+	if not args['all'] and not args["sequence"] and args['process'] is None:
+		parser.error('without -a or -e, -p flag is required')
 	return args
 
 def gamma(image, gamma=1.0):
@@ -488,12 +490,35 @@ def draw_zoom_area(img, zoom_from):
 	"""
 	cv2.rectangle(img,(zoom_from,zoom_from),(zoom_from+SAMPLE_SIZE,zoom_from+SAMPLE_SIZE),(255,0,0),3)
 
+def sequence(image):
+	"""Applies sequence of filters to an image
+	Parameters
+	----------
+	image : numpy.ndarray
+		The raw image.
+	
+	Returns
+	-------
+	numpy.ndarray
+		A NumPy's ndarray of the image processed with seqeence of filters.
+	"""
+	modified = dehaze(image)
+	modified = gamma(modified, gamma = 1.8)
+	modified = clahe(modified)
+	modified = kernel(modified, kernel = [[-1,-1,-1],[-1,20,-1],[-1,-1,-1]])
+
+	return modified
+
+
 if __name__ == '__main__':
 	args = parser()
 	
 	try:
 		img = cv2.imread(args['image'])
-		if args['all']:
+		if args["sequence"]:
+			modified = sequence(img)
+			cv2.imwrite("sequence.jpg", modified)
+		elif args['all']:
 			compare_all(img, args)
 		elif args['process'] in locals():
 			f_args = get_process_opts(args)
