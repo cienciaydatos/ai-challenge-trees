@@ -32,6 +32,8 @@ def parser():
 
 	parser.add_argument("-a", "--all", required=False, default=False, action='store_true',
 						 help ="Compare all")
+	parser.add_argument("-e", "--sequence", required=False, default=False, action='store_true',
+						 help ="Applies sequence of filters")
 	parser.add_argument("-c", "--clip_limit", required=False, type=float, default=2.0,
 						 help ="Clahe clip Limit")
 	parser.add_argument("-i", "--image", required=True,
