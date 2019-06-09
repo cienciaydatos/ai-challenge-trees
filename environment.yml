@@ -1,0 +1,19 @@
+name: omdena
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python>=3.6
+  - scipy
+  - numpy
+  - opencv
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - tensorflow>=1.9.0
+  - tensorflow-hub
+  - tensorboard
+  - graphviz
+  - pydot
+  - keras
+  - h5py
