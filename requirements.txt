@@ -6,3 +6,8 @@ tensorboard
 keras
 pydot
 jupyter
+xmltodict
+scikit-image
+mrcnn
+cython
+pycocotools

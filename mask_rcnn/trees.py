@@ -44,13 +44,13 @@ from mrcnn import model as modellib, utils
 
 
 # Root directory of the project
-ROOT_DIR = os.path.abspath("../../../")
+ROOT_DIR = os.path.abspath("../")
 # Path to trained weights file
 COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "weights", "mask_rcnn_coco.h5")
 
 # Directory to save logs and model checkpoints, if not provided
 # through the command line argument --logs
-DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, 'repos','ai-challenge-trees', 'mask_rcnn', 'logs')
+DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, 'mask_rcnn', 'logs')
 
 ############################################################
 #  Configurations
@@ -331,9 +331,9 @@ if __name__ == '__main__':
 
     # Configurations
     if args.command == "train":
-        config = treeConfig()
+        config = TreeConfig()
     else:
-        class InferenceConfig(treeConfig):
+        class InferenceConfig(TreeConfig):
             # Set batch size to 1 since we'll be running inference on
             # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
             GPU_COUNT = 1
