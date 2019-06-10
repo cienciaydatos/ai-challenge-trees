@@ -5,4 +5,5 @@ tensorflow
 tensorboard
 keras
 pydot
+jupyter
 labelbox

@@ -5,21 +5,14 @@ For a quick overview of UNet check this post
 https://towardsdatascience.com/understanding-semantic-segmentation-with-unet-6be4f42d4b47
 This implementation is based on the code presented there.
 
-TODO:
-
-1. Current implementation is based on original UNet paper and accepts BW images only.
-   Input layer needs to be of shape (572, 572, 3) to accept RGB images.
-   Output image is BW so the transition from RBC to BW needs to happen somewhere inside the network.
-2. Loss function needs to be implemented. Also other metrics might be handy.
-3. Score method for the UNet class needs to be implemented.
-3. Prediction method for the UNet class needs to be implemented.
-
 """
 
 from keras.models import Model
 from keras.layers import Input, Convolution2D, MaxPooling2D, Convolution2DTranspose, Cropping2D, concatenate
 from keras.optimizers import Adam
 from keras.callbacks import TensorBoard, ReduceLROnPlateau, EarlyStopping
+
+__all__ = ['UNet']
 
 
 def create_model():
@@ -32,7 +25,7 @@ def create_model():
 
     n_filters = 64
 
-    inputs = Input(shape=(572, 572, 1))
+    inputs = Input(shape=(572, 572, 3))
 
     conv1 = convolution_block(inputs, n_filters * 1)
     pool1 = MaxPooling2D((2, 2))(conv1)
@@ -72,7 +65,7 @@ def create_model():
     concat9 = concatenate([crop9, up9], axis=3)
     conv9 = convolution_block(concat9, n_filters * 1)
 
-    outputs = Convolution2D(1, (1, 1), activation='sigmoid')(conv9)
+    outputs = Convolution2D(filters=2, kernel_size=1, activation='sigmoid')(conv9)
 
     model = Model(inputs=inputs, outputs=outputs)
     optimizer = Adam()
