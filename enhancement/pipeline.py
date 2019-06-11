@@ -35,11 +35,14 @@ class Pipeline(object):
 			self.outputFIleType = fileType
 		else:
 			print("File type must be jpg, png or tif")
+			
+	def setOutputPath(self, path):
+		self.outputPath = path
 	
 	def addImage(self, imagePath):
 		self.images.append(imagePath)
 
-	def addFolder(self, path):
+	def addInputFolder(self, path):
 		self.inputPath = path
 		"""
 		here add method to add images to self.images with os.path
@@ -53,7 +56,7 @@ class Pipeline(object):
 		self.pipeline = pipeline
 	
 	def saveModified(self, image):
-		name = "modified." + format
+		name = "modified." + format #this to be developed - dynamic file name and output path must be considered
 		try:
 			cv2.imwrite( name, image )
 		except IOError as error:
@@ -71,11 +74,11 @@ class Pipeline(object):
 			mod_step = 0
 			for item in self.pipeline:
 				if display_steps:
-					cv2.imshow("modification"+str(mod_step)+" "+image, temp)
+					cv2.imshow("modification"+str(mod_step)+" "+image, temp) #this to be changed to pyplot
 				temp = item.run(temp)
 			
 			if display_steps:
-				cv2.imshow("final modification: "+image, temp)
+				cv2.imshow("final modification: "+image, temp) #this to be changed to pyplot
 					
 			if save_files:
 				self.saveModified(temp)	
