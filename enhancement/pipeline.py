@@ -6,8 +6,9 @@ Created on Mon Jun 10 13:54:03 2019
 """
 
 import cv2
-import os
+import os, os.path
 from utils import dehaze, gamma, unsharp, denoise, kernel, clahe
+import matplotlib.pyplot as plt
 
 
 class PipeItem(object):
@@ -38,15 +39,22 @@ class Pipeline(object):
 			
 	def setOutputPath(self, path):
 		self.outputPath = path
+		if not os.path.isdir(self.outputPath):
+			try:
+				os.mkdir(self.outputPath)
+			except IOError as error:
+				print(error)
+		
 	
 	def addImage(self, imagePath):
 		self.images.append(imagePath)
 
 	def addInputFolder(self, path):
 		self.inputPath = path
-		"""
-		here add method to add images to self.images with os.path
-		"""
+		for root, dir, files in os.walk(self.inputPath):
+			for name in files:
+				if name[-4:] in [".jpg", ".png", ".tif"]:
+					self.addImage(os.path.join(root, name))
 	
 	def addPipeItem(self, item):
 		self.pipeline.append(item)
@@ -54,45 +62,51 @@ class Pipeline(object):
 	
 	def setPipeline(self, pipeline):
 		self.pipeline = pipeline
-	
-	def saveModified(self, image):
-		name = "modified." + format #this to be developed - dynamic file name and output path must be considered
+		
+	def saveModified(self, image, fileName):
+		
+		outputPath = os.path.join(self.outputPath,fileName[:-4]+"_modified."+self.outputFIleType)
 		try:
-			cv2.imwrite( name, image )
+			cv2.imwrite( outputPath, image )
 		except IOError as error:
 			print(error)
 			
 	def run(self, save_files = True, display_steps = False):
 		
+		number = len(self.images)
+		current = 0
 		for image in self.images:
-			print("processing image: " + image)
+			current += 1
+			print("processing image ", current, "out of", number, "\n", image)
 			try:
 				temp = cv2.imread(image)
 			except IOError as error:
 				print(error)
 				
-			mod_step = 0
 			for item in self.pipeline:
 				if display_steps:
-					cv2.imshow("modification"+str(mod_step)+" "+image, temp) #this to be changed to pyplot
+					plt.imshow(cv2.cvtColor(temp, cv2.COLOR_BGR2RGB))
+					plt.show()
 				temp = item.run(temp)
 			
 			if display_steps:
-				cv2.imshow("final modification: "+image, temp) #this to be changed to pyplot
+				plt.imshow(cv2.cvtColor(temp, cv2.COLOR_BGR2RGB))
+				plt.show()
 					
 			if save_files:
-				self.saveModified(temp)	
+				fileName = os.path.split(image)[1]
+				self.saveModified(temp, fileName)	
 
-pipeline = [
+filter_sequence = [
     PipeItem(dehaze),
     PipeItem(gamma, gamma=1.8),
     PipeItem(kernel, kernel=[[-1,-1,-1],[-1,20,-1],[-1,-1,-1]]),
-    PipeItem(clahe),
+    PipeItem(clahe)
 ]
-	
-imagePath = r"C:/Users/lukasz.kaczmarek/source/Python/test.tif"
 
 pipeline = Pipeline()
-pipeline.addImage(imagePath)
-pipeline.setPipeline(pipeline)	
+pipeline.addInputFolder( r"C:/Users/lukasz.kaczmarek/source/Python/Australia")
+pipeline.setOutputPath(r"C:/Users/lukasz.kaczmarek/source/Python/Australia/modified")
+pipeline.setOutputFileType("jpg")
+pipeline.setPipeline(filter_sequence)	
 pipeline.run(save_files = True, display_steps = False)
