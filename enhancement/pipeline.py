@@ -97,16 +97,17 @@ class Pipeline(object):
 				fileName = os.path.split(image)[1]
 				self.saveModified(temp, fileName)	
 
-filter_sequence = [
-    PipeItem(dehaze),
-    PipeItem(gamma, gamma=1.8),
-    PipeItem(kernel, kernel=[[-1,-1,-1],[-1,20,-1],[-1,-1,-1]]),
-    PipeItem(clahe)
-]
+if __name__ == "__main__":
+	filter_sequence = [
+			PipeItem(dehaze),
+			PipeItem(gamma, gamma=1.8),
+			PipeItem(kernel, kernel=[[-1,-1,-1],[-1,20,-1],[-1,-1,-1]]),
+			PipeItem(clahe)
+			]
 
-pipeline = Pipeline()
-pipeline.addInputFolder( r"C:/Users/lukasz.kaczmarek/source/Python/Australia")
-pipeline.setOutputPath(r"C:/Users/lukasz.kaczmarek/source/Python/Australia/modified")
-pipeline.setOutputFileType("jpg")
-pipeline.setPipeline(filter_sequence)	
-pipeline.run(save_files = True, display_steps = False)
+	pipeline = Pipeline()
+	pipeline.addInputFolder( r"C:/Users/lukasz.kaczmarek/source/Python/Australia")
+	pipeline.setOutputPath(r"C:/Users/lukasz.kaczmarek/source/Python/Australia/modified")
+	pipeline.setOutputFileType("jpg")
+	pipeline.setPipeline(filter_sequence)	
+	pipeline.run(save_files = True, display_steps = False)
