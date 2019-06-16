@@ -6,6 +6,7 @@ Created on Mon Jun 10 13:54:03 2019
 """
 
 import cv2
+import numpy
 import os, os.path
 from utils import dehaze, gamma, unsharp, denoise, kernel, clahe
 import matplotlib.pyplot as plt
@@ -71,6 +72,31 @@ class Pipeline(object):
 		except IOError as error:
 			print(error)
 			
+	def show(self, image):
+		plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+		plt.show()
+	
+	def process(self, image, display_steps = False):
+	
+		if isinstance(image, str):
+			try:
+				temp = cv2.imread(image)
+			except IOError as error:
+				print(error)	
+		elif isinstance(image, numpy.ndarray):
+			temp = image
+			 
+		for item in self.pipeline:
+			if display_steps:
+				self.show(temp)
+				
+			temp = item.run(temp)
+			
+		if display_steps:
+			self.show(temp)
+			
+		return temp
+	
 	def run(self, save_files = True, display_steps = False):
 		
 		number = len(self.images)
@@ -78,21 +104,8 @@ class Pipeline(object):
 		for image in self.images:
 			current += 1
 			print("processing image ", current, "out of", number, "\n", image)
-			try:
-				temp = cv2.imread(image)
-			except IOError as error:
-				print(error)
-				
-			for item in self.pipeline:
-				if display_steps:
-					plt.imshow(cv2.cvtColor(temp, cv2.COLOR_BGR2RGB))
-					plt.show()
-				temp = item.run(temp)
-			
-			if display_steps:
-				plt.imshow(cv2.cvtColor(temp, cv2.COLOR_BGR2RGB))
-				plt.show()
-					
+			self.process_image(image, display_steps = display_steps)
+		
 			if save_files:
 				fileName = os.path.split(image)[1]
 				self.saveModified(temp, fileName)	
